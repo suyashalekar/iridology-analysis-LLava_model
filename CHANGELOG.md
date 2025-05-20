@@ -5,6 +5,22 @@ All notable changes to the Iridology Analysis System will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2023-05-25
+
+### Added
+- Streamlit web interface for easy analysis of iris images
+- Image upload/selection capabilities in the interface
+- Body system selection in the UI for targeted analysis
+- Results visualization organized by body system
+- Analysis results comparison feature
+- User-adjustable analysis parameters via UI controls
+
+### Changed
+- Reorganized project structure for better modularity
+- Externalized all configuration parameters to config.json
+- Improved result categorization into definitive/possible/normal findings
+- Enhanced documentation with UI usage instructions
+
 ## [1.0.0] - 2023-05-23
 
 ### Added
@@ -18,9 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved documentation including README and CHANGELOG
 
 ### Changed
-- Restructured codebase with organized directory structure
-- Refactored marker analysis to process by body system instead of linearly
-- Modified result format to organize findings by body system and confidence level
+- Restructured marker analysis approach from linear to hierarchical
+- Refactored code to use modular components
+- Updated prompt templates to focus on specific body systems
+- Improved report generation to group findings by body system
 
 ### Fixed
 - Context window limitations by using hierarchical approach
