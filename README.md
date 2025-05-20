@@ -10,6 +10,19 @@ A machine learning based iridology analysis system that uses LLaVA-1.6-Vicuna-13
 - **Enhanced Reporting**: Provides system-specific recommendations based on findings
 - **Streamlit Interface**: User-friendly web interface for analyzing and comparing iris images
 
+## Streamlit Interface
+
+![Streamlit Interface Screenshot](docs/images/streamlit_interface.png)
+
+The Streamlit interface provides an intuitive way to interact with the iridology analysis system, allowing users to:
+
+- Upload iris images or select from existing ones
+- Configure analysis parameters
+- View results organized by body system
+- Compare different analyses
+
+For detailed instructions, see [Streamlit Interface Documentation](docs/streamlit_interface.md).
+
 ## Project Structure
 
 ```

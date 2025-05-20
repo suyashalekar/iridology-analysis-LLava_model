@@ -1,0 +1,12 @@
+PLACEHOLDER FOR STREAMLIT INTERFACE SCREENSHOT
+
+To add a screenshot of the Streamlit interface:
+
+1. Run the application using:
+   ./run_streamlit_app.sh
+
+2. Take a screenshot of the interface with analysis results displayed
+
+3. Save the screenshot as "streamlit_interface.png" in this directory (docs/images/)
+
+4. Delete this placeholder text file after adding the screenshot 
