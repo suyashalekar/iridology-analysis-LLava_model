@@ -139,11 +139,15 @@ def analyze_iris(image_path, config, selected_systems=None):
     resize_height = config['image_processing']['resize_height']
     data_file = config['data']['iridology_data_file']
     
+    # Start timing
+    start_time = time.time()
+    
     # Display progress
     progress_bar = st.progress(0)
+    status_text = st.empty()
     
     # Step 1: Resize image
-    st.info("Preprocessing image...")
+    status_text.info("Preprocessing image...")
     progress_bar.progress(10)
     
     original_image_path = image_path
@@ -152,8 +156,11 @@ def analyze_iris(image_path, config, selected_systems=None):
         target_size=(resize_width, resize_height)
     )
     
+    resize_time = time.time() - start_time
+    status_text.info(f"Preprocessing image... ({resize_time:.2f}s)")
+    
     # Step 2: Load hierarchical data
-    st.info("Loading hierarchical iridology data...")
+    status_text.info(f"Loading hierarchical iridology data... ({resize_time:.2f}s)")
     progress_bar.progress(20)
     
     hierarchical_data = load_hierarchical_data(
@@ -162,13 +169,16 @@ def analyze_iris(image_path, config, selected_systems=None):
         max_markers=max_markers
     )
     
+    load_data_time = time.time() - start_time
+    status_text.info(f"Loading hierarchical iridology data... ({load_data_time:.2f}s)")
+    
     # Filter hierarchical data by selected systems if specified
     if selected_systems and selected_systems != ["All"]:
         hierarchical_data = {system: data for system, data in hierarchical_data.items() 
                             if system in selected_systems}
     
     # Step 3: Analyze image
-    st.info("Analyzing iris image with LLaVA model...")
+    status_text.info(f"Analyzing iris image with LLaVA model... ({load_data_time:.2f}s)")
     progress_bar.progress(30)
     
     marker_responses = analyze_iris_image_hierarchical(
@@ -178,102 +188,103 @@ def analyze_iris(image_path, config, selected_systems=None):
         early_stop_threshold=early_stop
     )
     
+    analysis_time = time.time() - start_time
+    status_text.info(f"Analyzing iris image with LLaVA model... ({analysis_time:.2f}s)")
+    
     # Step 4: Generate report
-    st.info("Creating analysis report...")
+    status_text.info(f"Creating analysis report... ({analysis_time:.2f}s)")
     progress_bar.progress(90)
     
     final_report = enhanced_aggregate_marker_responses(marker_responses)
     
-    # Save report if requested
+    # Save report
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     image_id = os.path.splitext(os.path.basename(image_path))[0]
     results_dir = config['data']['results_directory']
     os.makedirs(results_dir, exist_ok=True)
     
-    output_filename = f"{image_id}_analysis_{timestamp}_v{config['version']}.txt"
+    output_filename = f"iris_{image_id}_analysis_{timestamp}_v{config['version']}.txt"
     output_path = os.path.join(results_dir, output_filename)
     
+    # Calculate total processing time
+    total_time = time.time() - start_time
+    
     with open(output_path, "w") as f:
-        f.write(f"Iridology Analysis Report\n")
+        f.write(f"Analysis of iris image: {image_path}\n")
+        f.write(f"Date/Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"Version: {config['version']}\n")
-        f.write(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"Model: {config['model']['name']}\n")
-        f.write(f"Image: {original_image_path} (resized to {resize_width}x{resize_height})\n\n")
+        f.write(f"Processing Time: {total_time:.2f} seconds\n\n")
+        
+        # Add detailed timing
+        f.write("--- Processing Timing ---\n")
+        f.write(f"Image preprocessing: {resize_time:.2f} seconds\n")
+        f.write(f"Data loading: {load_data_time - resize_time:.2f} seconds\n")
+        f.write(f"Analysis: {analysis_time - load_data_time:.2f} seconds\n")
+        f.write(f"Report generation: {total_time - analysis_time:.2f} seconds\n")
+        f.write(f"Total processing time: {total_time:.2f} seconds\n\n")
+        
+        # Add the main report
         f.write(final_report)
     
     # Clean up temporary file
-    if resized_image_path != original_image_path:
+    if resized_image_path != original_image_path and os.path.exists(resized_image_path):
         try:
             os.remove(resized_image_path)
         except Exception as e:
-            st.warning(f"Warning: Could not delete temporary file - {e}")
+            print(f"Warning: Could not delete temporary file {resized_image_path}: {e}")
     
+    # Complete progress
     progress_bar.progress(100)
+    status_text.success(f"Analysis complete in {total_time:.2f} seconds")
     
-    return marker_responses, final_report, output_path
+    return final_report, output_path, total_time
 
-# Parse the report for visualization
 def parse_report_for_visualization(marker_responses):
-    """Parse marker responses into a format for visualization"""
-    # Organize by body system
-    body_system_findings = {}
+    """Parse marker responses for visualization."""
+    # Simplified for now - returns counts by body system and status
+    body_systems = {}
     
     for resp in marker_responses:
-        body_system = resp.get("body_system", "Other")
+        system = resp.get('body_system', 'Other')
+        is_positive = resp.get('is_positive', False)
         
-        if body_system not in body_system_findings:
-            body_system_findings[body_system] = {
-                "definitive": [],
-                "possible": [],
-                "normal": [],
-                "uncertain": []
-            }
+        if system not in body_systems:
+            body_systems[system] = {'positive': 0, 'negative': 0, 'total': 0}
         
-        # Determine category
-        category = "uncertain"
-        if resp.get("is_generic", False):
-            category = "uncertain"
-        elif resp.get("is_positive", False):
-            if "yes" in resp.get("response", "").lower():
-                category = "definitive"
-            else:
-                category = "possible"
-        elif "not observed" in resp.get("response", "").lower():
-            category = "normal"
-            
-        # Add to appropriate category
-        body_system_findings[body_system][category].append(resp)
+        body_systems[system]['total'] += 1
+        if is_positive:
+            body_systems[system]['positive'] += 1
+        else:
+            body_systems[system]['negative'] += 1
     
-    return body_system_findings
+    return body_systems
 
-# Function to create a downloadable link
 def get_download_link(text, filename, link_text):
     """Generate a download link for text content"""
     b64 = base64.b64encode(text.encode()).decode()
     href = f'<a href="data:file/txt;base64,{b64}" download="{filename}">{link_text}</a>'
     return href
 
-# App header and title
 def display_header():
-    """Display the app header"""
-    st.title("🔍 Iridology Analysis System")
-    st.markdown("---")
-    
-    col1, col2 = st.columns([3, 1])
+    """Display the application header and description"""
+    col1, col2 = st.columns([1, 5])
     
     with col1:
-        st.markdown("""
-        This application uses LLaVA-1.6-Vicuna-13B with a hierarchical analysis approach 
-        to detect health markers in iris images. The hierarchical approach organizes markers 
-        by body system for more efficient analysis and better organized results.
-        """)
+        st.image("https://img.icons8.com/ios-filled/100/000000/iris-scan.png", width=60)
     
     with col2:
-        config = load_config()
-        st.markdown(f"**Version:** {config['version']}")
-        st.markdown(f"**Model:** {config['model']['name']}")
+        st.title("Iridology Analysis System")
+    
+    st.markdown("""
+    This application uses LLaVA-1.6-Vicuna-13B with a hierarchical analysis approach to detect health markers in iris images. The hierarchical approach organizes markers by body system for more efficient analysis and better organized results.
+    """)
+    
+    # Display version and model info in sidebar
+    config = load_config()
+    st.sidebar.markdown(f"**Version:** {config['version']}")
+    st.sidebar.markdown(f"**Model:** {config['model']['name']}")
 
-# Main application
 def main():
     # Load configuration
     config = load_config()
@@ -281,230 +292,145 @@ def main():
     # Display header
     display_header()
     
-    # Sidebar - Configuration
+    # Sidebar options
     st.sidebar.title("Settings")
     
-    # Analysis mode selection
-    analysis_mode = st.sidebar.radio(
+    # Analysis mode selection (single image only now)
+    st.sidebar.subheader("Analysis Mode")
+    analysis_mode = "Single Image"
+    st.sidebar.radio(
         "Analysis Mode",
-        ["Single Image", "Compare Images"]
+        ["Single Image"],
+        index=0,
+        key="analysis_mode",
+        disabled=True,
+        label_visibility="collapsed"
     )
     
     # Analysis parameters
     st.sidebar.subheader("Analysis Parameters")
     
-    # Get available body systems
-    all_body_systems = get_body_systems(config)
-    
-    # Body system selection
+    # Body systems selection
+    body_systems = get_body_systems(config)
+    all_systems = ["All"] + body_systems
     selected_systems = st.sidebar.multiselect(
         "Body Systems to Analyze",
-        ["All"] + all_body_systems,
-        default=["All"]
+        all_systems,
+        default=["All"],
+        key="body_systems"
     )
     
-    # If "All" is selected, ignore other selections
-    if "All" in selected_systems and len(selected_systems) > 1:
-        selected_systems = ["All"]
-    
-    # Priority threshold
+    # Update config parameters with sliders
     priority_threshold = st.sidebar.slider(
         "Priority Threshold",
-        min_value=1,
-        max_value=3,
-        value=config['analysis']['priority_threshold'],
-        help="Maximum priority level to include (1=highest priority only)"
+        min_value=1, max_value=3, value=config['analysis']['priority_threshold'],
+        help="Maximum priority level to include (1=highest priority, 3=lowest priority)"
     )
     
-    # Early stopping threshold
     early_stop_threshold = st.sidebar.slider(
         "Early Stop Threshold",
-        min_value=1,
-        max_value=5,
-        value=config['analysis']['early_stop_threshold'],
+        min_value=1, max_value=5, value=config['analysis']['early_stop_threshold'],
         help="Number of positive findings needed to stop checking a body system"
     )
     
-    # Maximum markers per system
-    max_markers_per_system = st.sidebar.slider(
+    max_markers = st.sidebar.slider(
         "Max Markers per System",
-        min_value=1,
-        max_value=10,
-        value=config['analysis']['max_markers_per_system'],
+        min_value=1, max_value=10, value=config['analysis']['max_markers_per_system'],
         help="Maximum number of markers to check per body system"
     )
     
-    # Update config with user settings
+    # Update config with selected values
     config['analysis']['priority_threshold'] = priority_threshold
     config['analysis']['early_stop_threshold'] = early_stop_threshold
-    config['analysis']['max_markers_per_system'] = max_markers_per_system
+    config['analysis']['max_markers_per_system'] = max_markers
     
-    # Single Image Analysis
+    # Main content area - Single Image Analysis
     if analysis_mode == "Single Image":
         st.header("Single Image Analysis")
         
-        # Image Selection
-        image_selection_method = st.radio(
-            "Select Image",
-            ["Upload New Image", "Choose Existing Image"]
-        )
+        # Option to upload a new image or select an existing one
+        upload_tab, existing_tab = st.tabs(["Upload New Image", "Select Existing Image"])
         
-        if image_selection_method == "Upload New Image":
+        with upload_tab:
             uploaded_file = st.file_uploader("Upload an iris image", type=["jpg", "jpeg", "png"])
             
-            if uploaded_file is not None:
-                # Save uploaded file to a temporary file
+            if uploaded_file:
+                # Save uploaded file to disk
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
                     tmp_file.write(uploaded_file.getvalue())
-                    image_path = tmp_file.name
-                
-                # Display the uploaded image
-                col1, col2 = st.columns([1, 2])
-                with col1:
-                    st.image(image_path, caption="Uploaded Iris Image", use_column_width=True)
-                    
-                with col2:
-                    # Analyze button
-                    if st.button("Analyze Iris Image"):
-                        with st.spinner("Analyzing..."):
-                            marker_responses, report, output_path = analyze_iris(image_path, config, selected_systems)
-                            
-                            # Store results in session state
-                            st.session_state.marker_responses = marker_responses
-                            st.session_state.report = report
-                            st.session_state.output_path = output_path
-                            st.session_state.analyzed_image_path = image_path
-        
-        else:  # Choose Existing Image
-            # Get list of existing images
-            image_files = get_image_list(config)
-            
-            if not image_files:
-                st.warning(f"No images found in {config['data']['images_directory']} directory")
-            else:
-                selected_image = st.selectbox("Select an image", image_files)
-                image_path = os.path.join(config['data']['images_directory'], selected_image)
-                
-                # Display the selected image
-                col1, col2 = st.columns([1, 2])
-                with col1:
-                    st.image(image_path, caption=f"Selected Image: {selected_image}", use_column_width=True)
-                    
-                with col2:
-                    # Analyze button
-                    if st.button("Analyze Iris Image"):
-                        with st.spinner("Analyzing..."):
-                            marker_responses, report, output_path = analyze_iris(image_path, config, selected_systems)
-                            
-                            # Store results in session state
-                            st.session_state.marker_responses = marker_responses
-                            st.session_state.report = report
-                            st.session_state.output_path = output_path
-                            st.session_state.analyzed_image_path = image_path
-        
-        # Display results if available
-        if hasattr(st.session_state, 'report') and st.session_state.report:
-            st.header("Analysis Results")
-            
-            # Create tabs for different view types
-            tab1, tab2, tab3 = st.tabs(["Body System View", "Full Report", "Download Options"])
-            
-            with tab1:
-                # Parse the report for visualization
-                body_system_findings = parse_report_for_visualization(st.session_state.marker_responses)
-                
-                # Create a tab for each body system
-                if body_system_findings:
-                    system_tabs = st.tabs(list(body_system_findings.keys()))
-                    
-                    for i, system in enumerate(body_system_findings.keys()):
-                        with system_tabs[i]:
-                            findings = body_system_findings[system]
-                            
-                            # Display definitive findings
-                            if findings["definitive"]:
-                                st.subheader("✅ Definitive Findings")
-                                for finding in findings["definitive"]:
-                                    with st.expander(finding["marker"].split('[')[0].strip()):
-                                        if "response" in finding:
-                                            st.text_area("Details", finding["response"], height=150)
-                            
-                            # Display possible findings
-                            if findings["possible"]:
-                                st.subheader("⚠️ Possible Findings")
-                                for finding in findings["possible"]:
-                                    with st.expander(finding["marker"].split('[')[0].strip()):
-                                        if "response" in finding:
-                                            st.text_area("Details", finding["response"], height=150)
-                            
-                            # Display if no findings
-                            if not findings["definitive"] and not findings["possible"]:
-                                st.info("No significant findings for this body system")
-                else:
-                    st.warning("No body system findings available")
-            
-            with tab2:
-                # Display full report
-                st.text_area("Full Analysis Report", st.session_state.report, height=500)
-            
-            with tab3:
-                # Download options
-                st.subheader("Download Options")
+                    temp_path = tmp_file.name
                 
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    # Download as text
-                    st.markdown(get_download_link(
-                        st.session_state.report,
-                        f"iridology_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                        "Download as Text File"
-                    ), unsafe_allow_html=True)
+                    st.image(temp_path, caption="Uploaded Iris Image", use_container_width=True)
                 
                 with col2:
-                    # View saved file location
-                    st.info(f"Report saved to: {st.session_state.output_path}")
-    
-    # Compare Images Analysis
-    else:
-        st.header("Compare Analysis Results")
+                    # Add analysis button
+                    if st.button("Analyze Iris Image", key="analyze_uploaded_image"):
+                        with st.spinner("Analyzing..."):
+                            # Perform analysis with timing
+                            final_report, output_path, total_time = analyze_iris(temp_path, config, selected_systems)
+                            
+                            # Display the results
+                            st.markdown(f"### Analysis Results (completed in {total_time:.2f} seconds)")
+                            st.text_area("Analysis Report", final_report, height=400)
+                            st.success(f"Analysis saved to: {output_path}")
+                            st.balloons()
         
-        # Get list of existing results
-        result_files = get_results_list(config)
-        
-        if not result_files:
-            st.warning(f"No analysis results found in {config['data']['results_directory']} directory")
-        else:
-            # Select results to compare
-            result1 = st.selectbox("Select first analysis result", result_files, index=0)
-            remaining_results = [f for f in result_files if f != result1]
+        with existing_tab:
+            # Get list of existing images
+            image_files = get_image_list(config)
             
-            if remaining_results:
-                result2 = st.selectbox("Select second analysis result", remaining_results, index=0)
+            if not image_files:
+                st.warning("No images found in the images directory.")
+            else:
+                # Image selection
+                selected_image = st.selectbox("Select an image to analyze", image_files)
                 
-                # Display comparison
-                if st.button("Compare Results"):
+                if selected_image:
+                    image_path = os.path.join(config['data']['images_directory'], selected_image)
+                    
                     col1, col2 = st.columns(2)
                     
                     with col1:
-                        st.subheader(f"Result 1: {result1}")
-                        result1_path = os.path.join(config['data']['results_directory'], result1)
-                        with open(result1_path, 'r') as f:
-                            result1_content = f.read()
-                        st.text_area("Contents", result1_content, height=500)
+                        st.image(image_path, caption=selected_image, use_container_width=True)
                     
                     with col2:
-                        st.subheader(f"Result 2: {result2}")
-                        result2_path = os.path.join(config['data']['results_directory'], result2)
-                        with open(result2_path, 'r') as f:
-                            result2_content = f.read()
-                        st.text_area("Contents", result2_content, height=500)
-            else:
-                st.warning("Need at least two result files to compare")
+                        # Add analysis button
+                        if st.button("Analyze Iris Image", key="analyze_existing_image"):
+                            with st.spinner("Analyzing..."):
+                                # Perform analysis with timing
+                                final_report, output_path, total_time = analyze_iris(image_path, config, selected_systems)
+                                
+                                # Display the results
+                                st.markdown(f"### Analysis Results (completed in {total_time:.2f} seconds)")
+                                st.text_area("Analysis Report", final_report, height=400)
+                                st.success(f"Analysis saved to: {output_path}")
+                                st.balloons()
+    
+    # Display results viewer (always available)
+    st.header("View Analysis Results")
+    
+    # Get list of existing analysis results
+    result_files = get_results_list(config)
+    
+    if not result_files:
+        st.info("No analysis results found. Run an analysis first.")
+    else:
+        selected_result = st.selectbox("Select a result to view", result_files)
+        
+        if selected_result:
+            result_path = os.path.join(config['data']['results_directory'], selected_result)
+            
+            with open(result_path, 'r') as f:
+                result_content = f.read()
+            
+            st.text_area("Analysis Report", result_content, height=500)
     
     # Footer
     st.markdown("---")
-    st.caption(f"Iridology Analysis System v{config['version']} | Hierarchical Approach")
+    st.markdown("Iridology Analysis System v1.1.0 | Hierarchical Approach")
 
 if __name__ == "__main__":
     main() 

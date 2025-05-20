@@ -8,7 +8,9 @@ A machine learning based iridology analysis system that uses LLaVA-1.6-Vicuna-13
 - **Priority-Based Evaluation**: Analyzes high-priority markers first, stopping early when sufficient evidence is found
 - **Body System Classification**: Groups findings by major body systems (Digestive, Nervous, Circulatory, etc.)
 - **Enhanced Reporting**: Provides system-specific recommendations based on findings
-- **Streamlit Interface**: User-friendly web interface for analyzing and comparing iris images
+- **Streamlit Interface**: User-friendly web interface for analyzing iris images
+- **Batch Processing**: Process all images in a directory with time tracking
+- **Performance Metrics**: Detailed timing information for each step of the analysis process
 
 ## Streamlit Interface
 
@@ -19,7 +21,7 @@ The Streamlit interface provides an intuitive way to interact with the iridology
 - Upload iris images or select from existing ones
 - Configure analysis parameters
 - View results organized by body system
-- Compare different analyses
+- Track processing time for each analysis step
 
 For detailed instructions, see [Streamlit Interface Documentation](docs/streamlit_interface.md).
 
@@ -48,21 +50,41 @@ The system includes a user-friendly Streamlit web interface for analyzing iris i
 1. **Single Image Analysis**:
    - Upload new images or select from existing images
    - Configure analysis parameters (body systems, priority thresholds)
-   - View results organized by body system
+   - View results with detailed timing information
    - Download analysis reports
 
-2. **Result Comparison**:
-   - Compare two previous analysis results side by side
-   - Track changes between analyses
+2. **Result Viewer**:
+   - View any previously generated analysis results
+   - Access detailed diagnostics and timing information
 
 ### Running the Interface:
 
 ```bash
-cd src
-streamlit run streamlit_app.py
+./run_streamlit_app.sh
 ```
 
 The interface will open in your default web browser at http://localhost:8501.
+
+## Batch Processing
+
+To process all images in the images directory in a single batch:
+
+```bash
+./run_batch_processing.sh
+```
+
+This will:
+- Process all images in the `images/` directory
+- Save detailed analysis results to the `results/` directory
+- Display progress with estimated completion time
+- Provide detailed timing information for each image
+
+### Batch Processing Features:
+
+- **Progress Tracking**: Shows progress through all images with estimated completion time
+- **Detailed Timing**: Records processing time for each image and each analysis step
+- **Fault Tolerance**: Continues processing if an individual image analysis fails
+- **Summary Report**: Provides total processing time and average time per image
 
 ## Installation
 
@@ -82,7 +104,13 @@ python src/iris_analyze.py images/example.jpg
 For web interface:
 
 ```bash
-streamlit run src/streamlit_app.py
+./run_streamlit_app.sh
+```
+
+For batch processing:
+
+```bash
+./run_batch_processing.sh
 ```
 
 ## Configuration
@@ -119,7 +147,12 @@ Configuration values are stored in `config/config.json`:
 ### Results
 
 Analysis results are saved in the `results` directory with a timestamp and version number:
-- `<image_id>_analysis_<timestamp>_v<version>.txt`
+- `iris_<image_id>_analysis_<timestamp>_v<version>.txt`
+
+Each result file includes:
+- Detailed timing information for each processing step
+- Debug information for troubleshooting
+- Complete analysis report
 
 ## How It Works
 

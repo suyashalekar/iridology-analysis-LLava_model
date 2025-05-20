@@ -6,8 +6,8 @@ import tempfile
 from PIL import Image
 import base64
 
-# Import from the main script
-from iris_analyzer_backend import (
+# Import from the main script - fix import path using the same convention as streamlit app
+from core.iris_analyzer_backend import (
     encode_image_to_base64, get_llava_response, is_generic_response,
     aggregate_marker_responses, MARKER_PROMPT_TEMPLATE
 )

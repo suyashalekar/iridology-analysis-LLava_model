@@ -10,7 +10,7 @@ import tempfile # For temporary image file
 from PIL import Image  # For image resizing
 
 # Import from llava_mlx_client
-from llava_mlx_client import query_llava as client_query_llava
+from models.llava_mlx_client import query_llava as client_query_llava
 
 # --- Configuration ---
 # Path to your expert iridology data CSV
