@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "model": {
     "name": "llava-v1.6-vicuna-13b",
     "api_url": "http://localhost:1234/v1/chat/completions"
@@ -25,6 +25,7 @@
     "images_directory": "images"
   },
   "templates": {
-    "marker_prompt_template": "Analyze this iris image for the marker '{marker_name}'. \n\nAs an iridology expert, examine:\n1. Inner iris: Digestive system\n2. Middle iris: Major organs\n3. Outer iris: Skin, lymphatics\n\nFocus only on '{marker_name}' and respond with:\nKEY FINDING: (YES/NO/POSSIBLE)\nCONFIDENCE: (High/Medium/Low)\nVISUAL DETAILS:\n  - LOCATION: Where in the iris\n  - APPEARANCE: Colors and patterns\n  - SIZE: How large/extensive\nSELF-VERIFICATION: (YES/NO)\n\nBe specific and concise."
+    "marker_prompt_template": "Analyze this iris image for the marker '{marker_name}'. \n\nAs an iridology expert, examine:\n1. Inner iris zones (closer to pupil)\n2. Middle zones\n3. Outer zones (periphery)\n\nSpecifically look for: {marker_description}\n\nIf this is a {body_system} system marker, focus especially on the corresponding iris sectors.\n\nDetermine with confidence if this marker is present or not present.",
+    "summary_prompt_template": "Summarize all findings from this iris analysis in a clear, organized report grouped by body system. Highlight definitive vs. possible markers. Include specific, actionable health recommendations for each body system with findings."
   }
 } 
