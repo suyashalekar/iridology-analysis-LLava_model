@@ -8,6 +8,7 @@ A machine learning based iridology analysis system that uses LLaVA-1.6-Vicuna-13
 - **Priority-Based Evaluation**: Analyzes high-priority markers first, stopping early when sufficient evidence is found
 - **Body System Classification**: Groups findings by major body systems (Digestive, Nervous, Circulatory, etc.)
 - **Enhanced Reporting**: Provides system-specific recommendations based on findings
+- **Streamlit Interface**: User-friendly web interface for analyzing and comparing iris images
 
 ## Project Structure
 
@@ -18,48 +19,72 @@ A machine learning based iridology analysis system that uses LLaVA-1.6-Vicuna-13
 ├── images/             # Test iris images
 ├── results/            # Analysis results
 ├── src/                # Source code
-│   ├── core/           # Core analysis functions
-│   ├── utils/          # Utility functions
-│   └── models/         # Model interface code
-└── tests/              # Test code
+│   ├── core/           # Core analysis functionality
+│   ├── models/         # Model interfaces
+│   ├── utils/          # Utility scripts
+│   └── streamlit_app.py # Web interface
+└── tests/              # Test scripts
 ```
+
+## Using the Streamlit Interface
+
+The system includes a user-friendly Streamlit web interface for analyzing iris images and viewing results.
+
+### Features:
+
+1. **Single Image Analysis**:
+   - Upload new images or select from existing images
+   - Configure analysis parameters (body systems, priority thresholds)
+   - View results organized by body system
+   - Download analysis reports
+
+2. **Result Comparison**:
+   - Compare two previous analysis results side by side
+   - Track changes between analyses
+
+### Running the Interface:
+
+```bash
+cd src
+streamlit run streamlit_app.py
+```
+
+The interface will open in your default web browser at http://localhost:8501.
 
 ## Installation
 
-1. Clone this repository
-2. Install the required dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-3. Make sure LLaVA-1.6-Vicuna-13B is running via LM Studio on port 1234
+1. Clone the repository
+2. Install dependencies: `pip install -r requirements.txt`
+3. Ensure LLaVA-1.6-Vicuna-13B is running (via MLX or other backend)
+4. Update the configuration in `config/config.json` to point to your model
 
 ## Usage
 
-### Hierarchical Analysis
-
-Run the hierarchical analysis on an iris image:
+For command-line usage:
 
 ```bash
-python src/iris_analyze_hierarchical.py images/16.jpg
+python src/iris_analyze.py images/example.jpg
 ```
 
-### Batch Processing
-
-Process multiple images:
+For web interface:
 
 ```bash
-python src/batch_analyze_iris.py
+streamlit run src/streamlit_app.py
 ```
 
-### Web Interface
+## Configuration
 
-Run the Streamlit web interface:
+Edit `config/config.json` to configure:
+- Model parameters
+- Analysis settings
+- File paths
 
-```bash
-sh run_streamlit_app.sh
-```
+## Documentation
+
+See the `docs/` directory for detailed documentation on:
+- Hierarchical approach (`hierarchical_approach.md`)
+- Analysis methods
+- System design
 
 ## Development
 
