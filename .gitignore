@@ -57,4 +57,7 @@ Thumbs.db
 *.ckpt
 
 # Log files
-*.log 
+*.log
+
+# Archive folder
+archive/ 
