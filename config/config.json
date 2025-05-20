@@ -1,0 +1,30 @@
+{
+  "version": "1.0.0",
+  "model": {
+    "name": "llava-v1.6-vicuna-13b",
+    "api_url": "http://localhost:1234/v1/chat/completions"
+  },
+  "image_processing": {
+    "resize_width": 512,
+    "resize_height": 512,
+    "jpg_quality": 85
+  },
+  "analysis": {
+    "max_markers_per_system": 3,
+    "early_stop_threshold": 2,
+    "priority_threshold": 2,
+    "token_limits": {
+      "marker_analysis": 200,
+      "summary": 1024,
+      "final_report": 1500
+    }
+  },
+  "data": {
+    "iridology_data_file": "iridology-clean.xlsx",
+    "results_directory": "results",
+    "images_directory": "images"
+  },
+  "templates": {
+    "marker_prompt_template": "Analyze this iris image for the marker '{marker_name}'. \n\nAs an iridology expert, examine:\n1. Inner iris: Digestive system\n2. Middle iris: Major organs\n3. Outer iris: Skin, lymphatics\n\nFocus only on '{marker_name}' and respond with:\nKEY FINDING: (YES/NO/POSSIBLE)\nCONFIDENCE: (High/Medium/Low)\nVISUAL DETAILS:\n  - LOCATION: Where in the iris\n  - APPEARANCE: Colors and patterns\n  - SIZE: How large/extensive\nSELF-VERIFICATION: (YES/NO)\n\nBe specific and concise."
+  }
+} 
